@@ -1,0 +1,12 @@
+# .gitignore
+
+# Dependências do Node, que são instaladas pela Vercel no deploy.
+/node_modules
+
+# Arquivo de variáveis de ambiente. NUNCA envie seus segredos!
+.env
+
+# Arquivos de log e de sistema operacional (opcional, mas boa prática).
+npm-debug.log*
+.DS_Store
+Thumbs.db
