@@ -89,10 +89,15 @@
                     <img src="${file.url}" class="card-img-top" alt="${file.pathname}">
                 </a>
                 <div class="card-body text-center">
-                    <p class="card-text small text-muted" title="${file.pathname}">
-                        ${file.pathname.length > 20 ? file.pathname.substring(0, 20) + '...' : file.pathname}
-                    </p>
-                </div>
+  <p class="card-text small text-muted" title="${file.pathname}">
+    ${file.pathname.length > 20 ? file.pathname.substring(0, 20) + '...' : file.pathname}
+  </p>
+  <div class="d-flex justify-content-center gap-2">
+    <button class="btn btn-sm btn-outline-danger delete-btn" data-path="${file.pathname}">🗑️</button>
+    <button class="btn btn-sm btn-outline-primary rename-btn" data-path="${file.pathname}">✏️</button>
+  </div>
+</div>
+
             </div>`;
           
           // Insere o HTML do card dentro do elemento de coluna.
@@ -160,6 +165,37 @@
         statusEl.className = 'mt-3 text-center text-danger';
       }
     });
+
+    // Delegação de eventos (para todos os botões criados dinamicamente)
+galleryEl.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('delete-btn')) {
+    const pathname = e.target.dataset.path;
+    if (confirm("Tem certeza que deseja excluir?")) {
+      const res = await fetch('/api/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pathname })
+      });
+      if (res.ok) loadGallery();
+      else alert("Erro ao excluir.");
+    }
+  }
+
+  if (e.target.classList.contains('rename-btn')) {
+    const pathname = e.target.dataset.path;
+    const newName = prompt("Digite o novo nome do arquivo:", pathname.split('/').pop());
+    if (newName && newName.trim() !== "") {
+      const res = await fetch('/api/rename', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pathname, newName })
+      });
+      if (res.ok) loadGallery();
+      else alert("Erro ao renomear.");
+    }
+  }
+});
+
 
     // --- 4. CARREGAMENTO INICIAL DA APLICAÇÃO ---
     // Adiciona um "ouvinte" ao evento 'DOMContentLoaded', que é disparado

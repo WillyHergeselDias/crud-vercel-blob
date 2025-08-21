@@ -4,7 +4,7 @@
 // Importa o framework Express para criar o servidor.
 const express = require('express');
 // Importa as funções 'put' (para upload) e 'list' (para listar) do SDK do Vercel Blob.
-const { put, list } = require('@vercel/blob');
+const { put, list, del } = require('@vercel/blob');
 // Importa a biblioteca dotenv para carregar variáveis de ambiente do arquivo .env.
 const dotenv = require('dotenv');
 // Importa o módulo 'path' do Node.js para lidar com caminhos de arquivos.
@@ -64,6 +64,49 @@ app.use(express.static(path.join(__dirname, 'public')));
 // --- 5. Inicialização do Servidor ---
 // Define a porta do servidor. Usa a porta definida no ambiente ou 3000 como padrão.
 const PORT = process.env.PORT || 3000;
+
+// Deletar arquivo
+app.delete('/api/delete', express.json(), async (req, res) => {
+  const { pathname } = req.body;
+  if (!pathname) return res.status(400).json({ message: 'Caminho do arquivo é obrigatório.' });
+
+  try {
+    await del(pathname);
+    res.status(200).json({ message: 'Arquivo excluído com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao excluir arquivo:', error);
+    res.status(500).json({ message: 'Erro ao excluir arquivo.', error: error.message });
+  }
+});
+
+// Renomear arquivo
+app.put('/api/rename', express.json(), async (req, res) => {
+  const { pathname, newName } = req.body;
+  if (!pathname || !newName) {
+    return res.status(400).json({ message: 'Caminho e novo nome são obrigatórios.' });
+  }
+
+  try {
+    // Baixa o arquivo existente
+    const fileUrl = `https://blob.vercel-storage.com/${pathname}`;
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error("Erro ao buscar o arquivo original.");
+    const buffer = await response.arrayBuffer();
+
+    // Faz upload com o novo nome
+    const newPath = pathname.split('/').slice(0, -1).concat(newName).join('/');
+    const blob = await put(newPath, Buffer.from(buffer), { access: 'public' });
+
+    // Exclui o antigo
+    await del(pathname);
+
+    res.status(200).json(blob);
+  } catch (error) {
+    console.error('Erro ao renomear arquivo:', error);
+    res.status(500).json({ message: 'Erro ao renomear arquivo.', error: error.message });
+  }
+});
+
 // Inicia o servidor e o faz "escutar" por requisições na porta definida.
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
